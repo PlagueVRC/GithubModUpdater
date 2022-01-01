@@ -20,7 +20,7 @@ namespace GithubModUpdater
             var ModFiles = Directory.GetFiles(Environment.CurrentDirectory + "\\Mods", "*.dll").ToList();
             ModFiles.AddRange(Directory.GetFiles(Environment.CurrentDirectory + "\\Plugins", "*.dll"));
 
-            var AllInfos = ModFiles.Select(o => (o, GetMelonInfo(o)));
+            var AllInfos = ModFiles.Select(o => (o, GetMelonInfo(o))).Where(a => a.Item2 != null);
 
             foreach (var Info in AllInfos)
             {
@@ -55,16 +55,23 @@ namespace GithubModUpdater
 
         private MelonInfoAttribute GetMelonInfo(string path)
         {
-            using (var asm = AssemblyDefinition.ReadAssembly(path, new ReaderParameters { ReadWrite = true }))
+            try
             {
-                var Attrib = asm?.CustomAttributes?.FirstOrDefault(a => a != null && (a.AttributeType.Name == "MelonModInfoAttribute" || a.AttributeType.Name == "MelonInfoAttribute"));
-
-                if (Attrib == null)
+                using (var asm = AssemblyDefinition.ReadAssembly(path, new ReaderParameters {ReadWrite = true}))
                 {
-                    return null;
-                }
+                    var Attrib = asm?.CustomAttributes?.FirstOrDefault(a => a != null && (a.AttributeType.Name == "MelonModInfoAttribute" || a.AttributeType.Name == "MelonInfoAttribute"));
 
-                return new MelonInfoAttribute(Attrib.ConstructorArguments[0].Value as Type, Attrib.ConstructorArguments[1].Value as string, Attrib.ConstructorArguments[2].Value as string, Attrib.ConstructorArguments[3].Value as string, Attrib.ConstructorArguments[4].Value as string);
+                    if (Attrib == null)
+                    {
+                        return null;
+                    }
+
+                    return new MelonInfoAttribute(null /*Attrib.ConstructorArguments[0].Value as Type*/, Attrib.ConstructorArguments[1].Value as string, Attrib.ConstructorArguments[2].Value as string, Attrib.ConstructorArguments[3].Value as string, Attrib.ConstructorArguments[4].Value as string);
+                }
+            }
+            catch
+            {
+                return null;
             }
         }
     }
